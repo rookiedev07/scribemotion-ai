@@ -16,8 +16,8 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   transcriptionProvider: hasApiKey ? 'openai' : (process.env.TRANSCRIPTION_PROVIDER || 'local'),
   mockTranscription: false,
-  openaiApiKey: process.env.OPENAI_API_KEY || '',
-  groqApiKey: process.env.GROQ_API_KEY || '',
+  openaiApiKey: (process.env.OPENAI_API_KEY || '').trim(),
+  groqApiKey: (process.env.GROQ_API_KEY || '').trim(),
   uploadDir: path.resolve(rootDir, process.env.UPLOAD_DIR || 'uploads'),
   exportDir: path.resolve(rootDir, process.env.EXPORT_DIR || 'exports'),
   ffmpegPath: ffmpegPath || 'ffmpeg'

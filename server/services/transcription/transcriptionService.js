@@ -9,11 +9,10 @@ class TranscriptionService {
   }
 
   getProvider() {
-    // 1. If OpenAI API key is configured and provider is openai, use Whisper API
-    if (config.openaiApiKey && this.providerType === 'openai') {
+    const hasCloudKey = Boolean(config.groqApiKey || config.openaiApiKey);
+    if (hasCloudKey) {
       return whisperTranscriptionProvider;
     }
-    // 2. Default to Local Whisper model
     return localWhisperProvider;
   }
 
