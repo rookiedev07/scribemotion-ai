@@ -1,0 +1,67 @@
+# ============================================================
+# ScribeMotion AI — Root .gitignore
+# ============================================================
+
+# ── Node ──────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.pnp
+.pnp.js
+
+# ── Environment & Secrets ─────────────────────────────────
+.env
+.env.local
+.env.*.local
+# Keep .env.example — it documents required vars (no secrets)
+
+# ── Uploads & Exports (user-generated at runtime) ─────────
+server/uploads/*
+!server/uploads/.gitkeep
+server/exports/*
+!server/exports/.gitkeep
+
+# ── Client Build Output ───────────────────────────────────
+client/dist/
+client/.vite/
+
+# ── Python Cache ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── HuggingFace / Transformers model cache ────────────────
+# Large model weights are downloaded at runtime — never commit them
+.cache/
+~/.cache/huggingface/
+server/services/transcription/__pycache__/
+
+# ── OS & Editor ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.vscode/
+.idea/
+
+# ── Logs ──────────────────────────────────────────────────
+logs/
+*.log
+
+# ── Misc ──────────────────────────────────────────────────
+*.bak
+*.tmp
+*.orig

@@ -1,0 +1,16 @@
+{
+  "name": "scribemotion-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Video Subtitle Generator MVP",
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue.bold,cyan.bold\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "start": "concurrently -n \"SERVER,CLIENT\" -c \"blue.bold,cyan.bold\" \"npm run start --prefix server\" \"npm run preview --prefix client\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "build": "npm run build --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
