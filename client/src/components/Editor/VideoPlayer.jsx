@@ -140,39 +140,44 @@ export default function VideoPlayer() {
       className="relative w-full h-full flex flex-col items-center justify-center bg-[#06080c] select-none overflow-hidden rounded-xl border border-slate-800/80 shadow-2xl group"
     >
       {/* Video Container with Fixed Aspect Ratio fit */}
-      <div ref={videoWrapperRef} className="relative max-w-full max-h-[calc(100%-60px)] flex items-center justify-center">
-        <video
-          ref={videoRef}
-          src={videoUrl}
-          playsInline
-          onTimeUpdate={handleTimeUpdate}
-          onEnded={() => setIsPlaying(false)}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          onClick={togglePlay}
-          className="max-h-[68vh] max-w-full w-auto object-contain rounded-lg shadow-inner cursor-pointer"
-        />
-
-        {/* Real-time Subtitle Overlay — font scales with video container width */}
-        <CaptionRenderer
-          segments={segments}
-          currentTime={currentTime}
-          captionStyle={captionStyle}
-          selectedSegmentId={selectedSegmentId}
-          isPaused={!isPlaying}
-          containerRef={videoWrapperRef}
-        />
-
-        {/* Big Center Play/Pause Indicator on hover/pause */}
-        {!isPlaying && (
-          <button
+      <div className="relative max-w-full max-h-[calc(100%-60px)] flex items-center justify-center">
+        <div
+          ref={videoWrapperRef}
+          className="relative inline-flex items-center justify-center max-w-full max-h-[68vh] overflow-hidden rounded-lg"
+        >
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            playsInline
+            onTimeUpdate={handleTimeUpdate}
+            onEnded={() => setIsPlaying(false)}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
             onClick={togglePlay}
-            aria-label="Play video"
-            className="absolute z-30 p-4 rounded-full bg-indigo-600/90 text-white shadow-xl hover:bg-indigo-500 hover:scale-110 active:scale-95 transition-all duration-200 backdrop-blur-sm"
-          >
-            <Play className="w-8 h-8 fill-white ml-1" />
-          </button>
-        )}
+            className="max-h-[68vh] max-w-full w-auto object-contain shadow-inner cursor-pointer"
+          />
+
+          {/* Real-time Subtitle Overlay — strictly bounded to video box */}
+          <CaptionRenderer
+            segments={segments}
+            currentTime={currentTime}
+            captionStyle={captionStyle}
+            selectedSegmentId={selectedSegmentId}
+            isPaused={!isPlaying}
+            containerRef={videoWrapperRef}
+          />
+
+          {/* Big Center Play/Pause Indicator on hover/pause */}
+          {!isPlaying && (
+            <button
+              onClick={togglePlay}
+              aria-label="Play video"
+              className="absolute z-30 p-4 rounded-full bg-indigo-600/90 text-white shadow-xl hover:bg-indigo-500 hover:scale-110 active:scale-95 transition-all duration-200 backdrop-blur-sm"
+            >
+              <Play className="w-8 h-8 fill-white ml-1" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Floating Bottom Control Bar */}

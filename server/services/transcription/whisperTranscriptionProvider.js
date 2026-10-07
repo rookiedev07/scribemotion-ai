@@ -55,34 +55,77 @@ class WhisperTranscriptionProvider {
    */
   normalizeWhisperResponse(data) {
     const rawSegments = data.segments || [];
-    const allWords = data.words || [];
+    let allWords = data.words || [];
 
-    const segments = rawSegments.map((seg, idx) => {
-      // Find words that fall within this segment's time boundary
-      const segmentWords = allWords
-        .filter(w => w.start >= seg.start - 0.05 && w.end <= seg.end + 0.1)
-        .map(w => ({
-          word: (w.word || '').trim(),
-          start: parseFloat(w.start.toFixed(2)),
-          end: parseFloat(w.end.toFixed(2))
-        }));
+    // If word timestamps are missing from root, pull from raw segments
+    if (allWords.length === 0) {
+      for (const seg of rawSegments) {
+        if (seg.words && seg.words.length > 0) {
+          allWords.push(...seg.words);
+        } else {
+          allWords.push(...this.approximateWords(seg.text || '', seg.start, seg.end));
+        }
+      }
+    }
 
-      // Fallback: If word timestamps weren't returned for this segment, approximate word intervals
-      const words = segmentWords.length > 0 ? segmentWords : this.approximateWords(seg.text || '', seg.start, seg.end);
+    // Clean word tokens
+    allWords = allWords.map(w => ({
+      word: (w.word || '').trim(),
+      start: parseFloat(Number(w.start).toFixed(2)),
+      end: parseFloat(Number(w.end).toFixed(2))
+    })).filter(w => w.word.length > 0);
 
-      return {
-        id: `seg_${idx + 1}`,
-        start: parseFloat(seg.start.toFixed(2)),
-        end: parseFloat(seg.end.toFixed(2)),
-        text: (seg.text || '').trim(),
-        words
-      };
-    });
+    // Group words into clean 3 to 4 word single-line subtitle segments
+    const groupedSegments = this.groupWordsIntoSegments(allWords, 4, 2.2);
 
     return {
       language: data.language || 'en',
-      segments
+      segments: groupedSegments.length > 0 ? groupedSegments : rawSegments
     };
+  }
+
+  groupWordsIntoSegments(words, maxWords = 4, maxDuration = 2.2) {
+    const segments = [];
+    if (!words || words.length === 0) return segments;
+
+    let currentWords = [];
+    let segIdx = 1;
+
+    for (let i = 0; i < words.length; i++) {
+      currentWords.push(words[i]);
+      const wordText = words[i].word;
+
+      const hasHardPause = wordText.endsWith('.') || wordText.endsWith('!') || wordText.endsWith('?');
+      const hasSoftPause = (wordText.endsWith(',') || wordText.endsWith(';')) && currentWords.length >= 3;
+      const segDuration = currentWords[currentWords.length - 1].end - currentWords[0].start;
+      const isLast = (i === words.length - 1);
+
+      const shouldSplit = (
+        isLast ||
+        hasHardPause ||
+        hasSoftPause ||
+        currentWords.length >= maxWords ||
+        segDuration >= maxDuration
+      );
+
+      if (shouldSplit && currentWords.length > 0) {
+        const segStart = currentWords[0].start;
+        const segEnd = currentWords[currentWords.length - 1].end;
+        const segText = currentWords.map(cw => cw.word).join(' ');
+
+        segments.push({
+          id: `seg_${segIdx}`,
+          start: parseFloat(segStart.toFixed(2)),
+          end: parseFloat(segEnd.toFixed(2)),
+          text: segText,
+          words: [...currentWords]
+        });
+        segIdx++;
+        currentWords = [];
+      }
+    }
+
+    return segments;
   }
 
   approximateWords(text, start, end) {

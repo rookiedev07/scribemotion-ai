@@ -41,6 +41,20 @@ export default function CaptionSegment({ segment, currentTime, captionStyle, sca
     }
   }
 
+  // Windowing: If a segment has more than 4 words, display only 3 to 4 words at a time
+  let displayWords = words;
+  let displayActiveIndex = activeWordIndex;
+
+  if (words.length > 4) {
+    const CHUNK_SIZE = 3; // display 3 words at a time
+    const activeIdx = activeWordIndex >= 0 ? activeWordIndex : 0;
+    const chunkStart = Math.floor(activeIdx / CHUNK_SIZE) * CHUNK_SIZE;
+    const chunkEnd = Math.min(words.length, chunkStart + CHUNK_SIZE);
+
+    displayWords = words.slice(chunkStart, chunkEnd);
+    displayActiveIndex = activeWordIndex >= 0 ? activeWordIndex - chunkStart : -1;
+  }
+
   const usedFontSize = scaledFontSize || fontSize;
   const hasBg = backgroundColor && backgroundColor !== 'transparent';
 
@@ -68,18 +82,17 @@ export default function CaptionSegment({ segment, currentTime, captionStyle, sca
         padding: paddingStyle,
         borderRadius: `${boxRadius}px`,
         lineHeight: 1.2,
-        // Keep captions on ONE line — segments are short (2-4 words)
+        maxWidth: '94%',
         whiteSpace: 'nowrap',
-        // text stroke for 'bold' style
         WebkitTextStroke: webkitStroke,
       }}
     >
-      {words.length > 0 ? (
-        words.map((wordObj, idx) => (
+      {displayWords.length > 0 ? (
+        displayWords.map((wordObj, idx) => (
           <CaptionWord
             key={`${wordObj.word}-${idx}-${wordObj.start}`}
             wordObj={wordObj}
-            isActive={idx === activeWordIndex}
+            isActive={idx === displayActiveIndex}
             captionStyle={{ ...captionStyle, fontSize: usedFontSize }}
             wordIndex={idx}
           />
