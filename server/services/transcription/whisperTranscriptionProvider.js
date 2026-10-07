@@ -2,44 +2,47 @@ import fs from 'fs';
 import { config } from '../../config/index.js';
 
 class WhisperTranscriptionProvider {
-  constructor() {
-    this.apiKey = config.openaiApiKey;
-  }
-
   /**
-   * Transcribe audio using OpenAI Whisper API with word-level timestamps
+   * Transcribe audio using OpenAI Whisper or Groq Whisper API with word-level timestamps
    */
   async transcribeAudio(audioPath) {
-    if (!this.apiKey) {
-      throw new Error('OPENAI_API_KEY is not configured on the server. Please switch to mock provider or provide an API key.');
+    const isGroq = Boolean(config.groqApiKey);
+    const apiKey = config.groqApiKey || config.openaiApiKey;
+
+    if (!apiKey) {
+      throw new Error('Neither GROQ_API_KEY nor OPENAI_API_KEY is configured on the server. Please provide an API key.');
     }
 
     if (!fs.existsSync(audioPath)) {
       throw new Error(`Audio file not found at ${audioPath}`);
     }
 
-    const fileStream = fs.createReadStream(audioPath);
     const formData = new FormData();
-    // Node.js 18+ Blob/File support
     const fileBuffer = fs.readFileSync(audioPath);
     const blob = new Blob([fileBuffer], { type: 'audio/wav' });
     formData.append('file', blob, 'audio.wav');
-    formData.append('model', 'whisper-1');
+    formData.append('model', isGroq ? 'whisper-large-v3' : 'whisper-1');
     formData.append('response_format', 'verbose_json');
     formData.append('timestamp_granularities[]', 'word');
     formData.append('timestamp_granularities[]', 'segment');
 
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    const apiUrl = isGroq
+      ? 'https://api.groq.com/openai/v1/audio/transcriptions'
+      : 'https://api.openai.com/v1/audio/transcriptions';
+
+    console.log(`[WhisperTranscription] Calling ${isGroq ? 'Groq Whisper-large-v3' : 'OpenAI Whisper-1'}...`);
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.apiKey}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: formData
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Whisper API error (${response.status}): ${errorText}`);
+      throw new Error(`${isGroq ? 'Groq' : 'Whisper'} API error (${response.status}): ${errorText}`);
     }
 
     const data = await response.json();
