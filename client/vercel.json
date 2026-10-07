@@ -1,0 +1,20 @@
+{
+    "rewrites": [
+        {
+            "source": "/api/:path*",
+            "destination": "https://scribemotion-ai.onrender.com/api/:path*"
+        },
+        {
+            "source": "/uploads/:path*",
+            "destination": "https://scribemotion-ai.onrender.com/uploads/:path*"
+        },
+        {
+            "source": "/exports/:path*",
+            "destination": "https://scribemotion-ai.onrender.com/exports/:path*"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}
