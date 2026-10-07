@@ -135,7 +135,11 @@ async function runTranscriptionPipeline(projectId) {
         });
       },
       onError: (err) => {
+        console.error(`[Project ${projectId}] Transcription pipeline failed:`, err);
         projectStore.updateProject(projectId, { status: 'error' });
+        sseManager.sendEvent(projectId, 'transcription_error', {
+          message: err.message || 'Transcription failed'
+        });
         sseManager.sendEvent(projectId, 'error', {
           message: err.message || 'Transcription failed'
         });

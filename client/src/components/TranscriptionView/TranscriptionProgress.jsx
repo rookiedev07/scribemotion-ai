@@ -28,7 +28,15 @@ export default function TranscriptionProgress({ onReady }) {
     const es = new EventSource(sseUrl);
     eventSourceRef.current = es;
 
-    es.addEventListener('transcription_started', (e) => {
+    const handleFailure = (msg) => {
+      setErrorText(msg || 'Transcription service error');
+      setStatus('error');
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+
+    es.addEventListener('transcription_started', () => {
       setStatus('streaming');
     });
 
@@ -38,15 +46,12 @@ export default function TranscriptionProgress({ onReady }) {
         const newSeg = payload.segment;
 
         setSegments((prev) => {
-          // Avoid duplicate ids
           if (prev.some(s => s.id === newSeg.id)) return prev;
-          const next = [...prev, newSeg];
-          return next;
+          return [...prev, newSeg];
         });
 
         setCurrentWordCount((prev) => prev + (newSeg.words?.length || 0));
 
-        // Auto-scroll feed down as new chunks stream in
         if (scrollRef.current) {
           scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
@@ -61,14 +66,12 @@ export default function TranscriptionProgress({ onReady }) {
         setStatus('complete');
         es.close();
 
-        // Update Zustand store
         setProject({
           ...project,
           transcript: fullTranscript,
           status: 'ready'
         });
 
-        // Smooth transition into editor
         setTimeout(() => {
           if (onReady) onReady();
         }, 800);
@@ -77,27 +80,52 @@ export default function TranscriptionProgress({ onReady }) {
       }
     });
 
+    es.addEventListener('transcription_error', (e) => {
+      try {
+        const errObj = JSON.parse(e.data);
+        handleFailure(errObj.message);
+      } catch (_) {
+        handleFailure('Transcription processing failed');
+      }
+    });
+
     es.addEventListener('error', (e) => {
-      // If error event contains data
       if (e.data) {
         try {
           const errObj = JSON.parse(e.data);
-          setErrorText(errObj.message || 'Transcription error occurred');
-        } catch (_) {
-          setErrorText('Transcription connection interrupted');
-        }
+          handleFailure(errObj.message);
+          return;
+        } catch (_) {}
       }
-      es.close();
     });
 
-    es.onerror = () => {
-      // SSE connection error fallback
-      if (status !== 'complete') {
-        // es.close();
+    // Fallback polling in case serverless proxy buffers or drops the SSE connection
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/projects/${project.id}`);
+        if (!res.ok) return;
+        const currentData = await res.json();
+        
+        if (currentData.status === 'ready' && currentData.transcript?.segments?.length > 0) {
+          clearInterval(pollInterval);
+          if (es) es.close();
+          setStatus('complete');
+          setSegments(currentData.transcript.segments);
+          setProject(currentData);
+          setTimeout(() => {
+            if (onReady) onReady();
+          }, 600);
+        } else if (currentData.status === 'error') {
+          clearInterval(pollInterval);
+          handleFailure('Transcription process failed on server');
+        }
+      } catch (pollErr) {
+        // Silent fail on individual poll
       }
-    };
+    }, 2500);
 
     return () => {
+      clearInterval(pollInterval);
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
       }

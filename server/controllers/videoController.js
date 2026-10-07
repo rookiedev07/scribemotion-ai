@@ -88,10 +88,23 @@ export async function createSampleProject(req, res) {
     const audioFilename = `${projectId}.wav`;
     const finalAudioPath = path.join(config.uploadDir, audioFilename);
 
-    // Copy sample video to project video
+    // Prepare project video
     const projectVideoFilename = `${projectId}.mp4`;
     const projectVideoPath = path.join(config.uploadDir, projectVideoFilename);
-    fs.copyFileSync(sampleVideoPath, projectVideoPath);
+
+    if (fs.existsSync(sampleVideoPath)) {
+      fs.copyFileSync(sampleVideoPath, projectVideoPath);
+    } else {
+      // Automatically generate a valid demo clip using FFmpeg if no sample video is on disk
+      console.log('[Sample Video] Generating dynamic demo clip with FFmpeg...');
+      await ffmpegService.runFfmpeg([
+        '-f', 'lavfi', '-i', 'testsrc=duration=8:size=1280x720:rate=30',
+        '-f', 'lavfi', '-i', 'sine=frequency=520:duration=8',
+        '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+        '-c:a', 'aac',
+        '-y', projectVideoPath
+      ]);
+    }
 
     // Extract audio
     await ffmpegService.extractAudio(projectVideoPath, finalAudioPath);
