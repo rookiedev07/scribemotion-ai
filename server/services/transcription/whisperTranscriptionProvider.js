@@ -6,8 +6,9 @@ class WhisperTranscriptionProvider {
    * Transcribe audio using OpenAI Whisper or Groq Whisper API with word-level timestamps
    */
   async transcribeAudio(audioPath) {
-    const isGroq = Boolean(config.groqApiKey);
-    const apiKey = config.groqApiKey || config.openaiApiKey;
+    const rawKey = config.groqApiKey || config.openaiApiKey || '';
+    const isGroq = Boolean(config.groqApiKey) || rawKey.startsWith('gsk_');
+    const apiKey = rawKey;
 
     if (!apiKey) {
       throw new Error('Neither GROQ_API_KEY nor OPENAI_API_KEY is configured on the server. Please provide an API key.');
